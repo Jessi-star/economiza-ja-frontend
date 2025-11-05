@@ -1,37 +1,28 @@
-import { db } from "../firebaseConfig";
-import {
-  collection,
-  addDoc,
-  getDocs,
-  deleteDoc,
-  doc,
-  updateDoc,
-} from "firebase/firestore";
+import { db, storage } from "../firebaseConfig";
+import { collection, addDoc, deleteDoc, doc, getDocs, updateDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
-const promoCollection = collection(db, "promocoes");
+const collectionRef = collection(db, "promocoes");
 
-// ✅ Listar promoções
+export async function uploadImage(file) {
+  const imageRef = ref(storage, `promotions/${file.name}-${Date.now()}`);
+  await uploadBytes(imageRef, file);
+  return await getDownloadURL(imageRef);
+}
+
 export async function getPromotions() {
-  const snap = await getDocs(promoCollection);
-  return snap.docs.map((d) => ({
-    id: d.id,
-    ...d.data(),
-  }));
+  const snap = await getDocs(collectionRef);
+  return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
-// ✅ Criar promoção
 export async function createPromotion(data) {
-  await addDoc(promoCollection, data);
+  return await addDoc(collectionRef, data);
 }
 
-// ✅ Atualizar promoção
 export async function updatePromotion(id, data) {
-  const promoRef = doc(db, "promocoes", id);
-  await updateDoc(promoRef, data);
+  return await updateDoc(doc(collectionRef, id), data);
 }
 
-// ✅ Excluir promoção
 export async function deletePromotion(id) {
-  const promoRef = doc(db, "promocoes", id);
-  await deleteDoc(promoRef);
+  return await deleteDoc(doc(collectionRef, id));
 }

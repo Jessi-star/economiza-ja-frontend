@@ -5,6 +5,7 @@ import {
   createPromotion,
   updatePromotion,
   deletePromotion,
+  uploadImage
 } from "../services/promotionService";
 
 export default function Promotions() {
@@ -16,7 +17,7 @@ export default function Promotions() {
   const [preco, setPreco] = useState("");
   const [validade, setValidade] = useState("");
   const [supermercadoNome, setSupermercadoNome] = useState("");
-  const [imagemUrl, setImagemUrl] = useState("");
+  const [imagemArquivo, setImagemArquivo] = useState(null);
   const [editingId, setEditingId] = useState(null);
 
   const load = async () => {
@@ -24,19 +25,23 @@ export default function Promotions() {
     setPromos(data);
   };
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
   const submitPromo = async (e) => {
     e.preventDefault();
+
+    let uploadedImageUrl = "";
+
+    if (imagemArquivo && imagemArquivo instanceof File) {
+      uploadedImageUrl = await uploadImage(imagemArquivo);
+    }
 
     const newData = {
       produto,
       preco: Number(preco),
       validade,
       supermercado: supermercadoNome,
-      imagem: imagemUrl,
+      imagem: uploadedImageUrl
     };
 
     if (editingId) {
@@ -47,15 +52,18 @@ export default function Promotions() {
       alert("Promoção cadastrada ✅");
     }
 
+    resetForm();
+    await load();
+  };
+
+  const resetForm = () => {
     setEditingId(null);
     setProduto("");
     setPreco("");
     setValidade("");
     setSupermercadoNome("");
-    setImagemUrl("");
+    setImagemArquivo(null);
     setShowForm(false);
-
-    await load();
   };
 
   const handleDelete = async (id) => {
@@ -71,16 +79,13 @@ export default function Promotions() {
       {user && (
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
           <button
-            onClick={() => {
-              setShowForm(true);
-              setEditingId(null);
-            }}
+            onClick={() => resetForm() || setShowForm(true)}
             style={{
               background: "#139c43",
               color: "#fff",
               border: "none",
               padding: "10px 16px",
-              borderRadius: 8,
+              borderRadius: 8
             }}
           >
             Nova Promoção
@@ -97,31 +102,31 @@ export default function Promotions() {
             padding: 16,
             background: "#fff",
             borderRadius: 12,
-            boxShadow: "0 6px 20px rgba(0,0,0,.08)",
+            boxShadow: "0 6px 20px rgba(0,0,0,.08)"
           }}
         >
           <h3 style={{ marginBottom: 12 }}>
             {editingId ? "Editar Promoção" : "Cadastrar Promoção"}
           </h3>
 
-          <input placeholder="Produto"
-            value={produto} onChange={(e) => setProduto(e.target.value)}
-            required style={{ width: "100%", padding: 10, marginBottom: 8 }} />
+          <input placeholder="Produto" value={produto}
+            onChange={(e) => setProduto(e.target.value)} required
+            style={{ width: "100%", padding: 10, marginBottom: 8 }} />
 
-          <input placeholder="Preço (ex: 18.99)"
-            value={preco} onChange={(e) => setPreco(e.target.value)}
-            required style={{ width: "100%", padding: 10, marginBottom: 8 }} />
+          <input placeholder="Preço ex: 18.99" value={preco}
+            onChange={(e) => setPreco(e.target.value)} required
+            style={{ width: "100%", padding: 10, marginBottom: 8 }} />
 
-          <input type="date"
-            value={validade} onChange={(e) => setValidade(e.target.value)}
-            required style={{ width: "100%", padding: 10, marginBottom: 8 }} />
+          <input type="date" value={validade}
+            onChange={(e) => setValidade(e.target.value)} required
+            style={{ width: "100%", padding: 10, marginBottom: 8 }} />
 
-          <input placeholder="Supermercado"
-            value={supermercadoNome} onChange={(e) => setSupermercadoNome(e.target.value)}
-            required style={{ width: "100%", padding: 10, marginBottom: 8 }} />
+          <input placeholder="Supermercado" value={supermercadoNome}
+            onChange={(e) => setSupermercadoNome(e.target.value)} required
+            style={{ width: "100%", padding: 10, marginBottom: 8 }} />
 
-          <input placeholder="Imagem (URL)"
-            value={imagemUrl} onChange={(e) => setImagemUrl(e.target.value)}
+          <input type="file" accept="image/*"
+            onChange={(e) => setImagemArquivo(e.target.files[0])}
             style={{ width: "100%", padding: 10, marginBottom: 12 }} />
 
           <div style={{ display: "flex", gap: 8 }}>
@@ -135,8 +140,7 @@ export default function Promotions() {
               }}>
               Salvar
             </button>
-            <button type="button"
-              onClick={() => setShowForm(false)}
+            <button type="button" onClick={resetForm}
               style={{
                 background: "#777",
                 color: "#fff",
@@ -163,28 +167,24 @@ export default function Promotions() {
               boxShadow: "0 6px 20px rgba(0,0,0,.08)",
               overflow: "hidden"
             }}>
-            
-            <img src={p.imagem}
-              alt={p.produto}
-              style={{
-                width: "100%",
-                height: 180,
-                objectFit: "cover"
-              }} />
+
+            {p.imagem ? (
+              <img src={p.imagem}
+                alt={p.produto}
+                style={{ width: "100%", height: 180, objectFit: "cover" }} />
+            ) : (
+              <div style={{
+                width: "100%", height: 180, background: "#eee",
+                display: "flex", justifyContent: "center", alignItems: "center"
+              }}>Sem Imagem</div>
+            )}
 
             <div style={{ padding: 16 }}>
               <h3>{p.produto}</h3>
-              <div style={{ color: "#139c43", fontWeight: 700 }}>
-                R$ {Number(p.preco).toFixed(2)}
-              </div>
+              <strong style={{ color: "#139c43" }}>R$ {Number(p.preco).toFixed(2)}</strong>
 
-              <p>
-                Supermercado: <strong>{p.supermercado}</strong>
-              </p>
-
-              {p.validade && (
-                <p style={{ color: "#555" }}>Validade: {p.validade}</p>
-              )}
+              <p>Supermercado: {p.supermercado}</p>
+              <p style={{ color: "#555" }}>Validade: {p.validade}</p>
 
               {user && (
                 <>
@@ -194,9 +194,8 @@ export default function Promotions() {
                       setEditingId(p.id);
                       setProduto(p.produto);
                       setPreco(p.preco);
-                      setValidade(p.validade || "");
+                      setValidade(p.validade);
                       setSupermercadoNome(p.supermercado);
-                      setImagemUrl(p.imagem || "");
                     }}
                     style={{
                       background: "#1e5eff",
@@ -205,8 +204,7 @@ export default function Promotions() {
                       borderRadius: 6,
                       marginTop: 10,
                       marginRight: 10
-                    }}
-                  >
+                    }}>
                     Editar
                   </button>
 
@@ -218,8 +216,7 @@ export default function Promotions() {
                       padding: "6px 10px",
                       borderRadius: 6,
                       marginTop: 10
-                    }}
-                  >
+                    }}>
                     Excluir
                   </button>
                 </>
