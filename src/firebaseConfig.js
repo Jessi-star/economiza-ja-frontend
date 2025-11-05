@@ -1,16 +1,18 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "SUA_KEY",
+  apiKey: "AIzaSyCFRbWmhuQLUJPxoJJlWoMUXCJbP5OMtDQ",
   authDomain: "economiza-ja.firebaseapp.com",
   projectId: "economiza-ja",
   storageBucket: "economiza-ja.appspot.com",
   messagingSenderId: "36089607329",
-  appId: "1:36089607329:web:5204097069e3abdb406ce0"
+  appId: "1:36089607329:web:5204097069e3abdb406ce0",
 };
 
 export const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
