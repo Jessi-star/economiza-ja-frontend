@@ -1,27 +1,26 @@
+// src/services/promotionService.js
+
 import { db } from "../firebaseConfig";
-import { collection, addDoc, deleteDoc, doc, getDocs, updateDoc } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  deleteDoc,
+  doc,
+  getDocs,
+} from "firebase/firestore";
 
-const promotionCollection = collection(db, "promotions");
+// ✅ Usar sempre o mesmo nome da coleção
+const COLLECTION_NAME = "promotions";
 
-// Listar promoções
-export const getPromotions = async () => {
-  const response = await getDocs(promotionCollection);
-  return response.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-};
+// ✅ Buscar promoções com ID correto
+export async function getPromotions() {
+  const snap = await getDocs(collection(db, COLLECTION_NAME));
+  return snap.docs.map((d) => ({
+    id: d.id,
+    ...d.data(),
+  }));
+}
 
-// Cadastrar promoção
-export const createPromotion = async (promotion) => {
-  await addDoc(promotionCollection, promotion);
-};
-
-// Atualizar promoção
-export const updatePromotion = async (id, promotion) => {
-  const promoRef = doc(db, "promotions", id);
-  await updateDoc(promoRef, promotion);
-};
-
-// Deletar promoção
-export const deletePromotion = async (id) => {
-  const promoRef = doc(db, "promotions", id);
-  await deleteDoc(promoRef);
-};
+// ✅ Criar promoção
+export async function createPromotion(promotion) {
+  await addDoc(collection(db, COLLECTION_NAME), promotion);_
