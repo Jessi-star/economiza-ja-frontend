@@ -16,14 +16,54 @@ export default function Navbar() {
       padding: "12px 20px",
       color: "white",
       display: "flex",
-      justifyContent: "space-between"
+      justifyContent: "space-between",
+      alignItems: "center"
     }}>
-      <div style={{ fontWeight: 700 }}>EconomizaJá</div>
+      
+      {/* ✅ LOGO NOVA */}
+      <Link to="/" style={{
+        textDecoration: "none",
+        display: "flex",
+        alignItems: "center",
+        gap: "10px"
+      }}>
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "6px"
+        }}>
+          <img
+            src="https://cdn-icons-png.flaticon.com/512/2838/2838838.png"
+            alt="Carrinho"
+            style={{ width: 26, height: 26, filter: "invert(100%)" }}
+          />
+          <img
+            src="https://cdn-icons-png.flaticon.com/512/684/684908.png"
+            alt="Localização"
+            style={{ width: 24, height: 24, filter: "invert(100%)" }}
+          />
+        </div>
 
+        <h2 style={{
+          color: "#fff",
+          margin: 0,
+          fontWeight: "700",
+          fontFamily: "Arial, sans-serif",
+          letterSpacing: "1px"
+        }}>
+          EconomizaJá
+        </h2>
+      </Link>
+
+      {/* ✅ MENU */}
       <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
         <Link to="/" style={{ color: "white", textDecoration: "none" }}>Promoções</Link>
+
         {user && (
-        <Link to="/supermarkets"style={{ color: "white", textDecoration: "none" }}>Supermercados</Link>)}
+          <Link to="/supermarkets" style={{ color: "white", textDecoration: "none" }}>
+            Supermercados
+          </Link>
+        )}
 
         {!user && (
           <>
@@ -43,7 +83,6 @@ export default function Navbar() {
           </>
         )}
 
-        {/* ✅ Agora funciona com displayName ou e-mail */}
         {user && (
           <span>Olá, {(user.displayName || user.email).split(" ")[0]}!</span>
         )}
