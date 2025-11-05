@@ -7,13 +7,6 @@ import {
   deletePromotion,
 } from "../services/promotionService";
 
-import { storage } from "../firebaseConfig";
-import {
-  ref,
-  uploadBytesResumable,
-  getDownloadURL,
-} from "firebase/storage";
-
 export default function Promotions() {
   const { user } = useAuth();
   const [promos, setPromos] = useState([]);
@@ -23,10 +16,7 @@ export default function Promotions() {
   const [preco, setPreco] = useState("");
   const [validade, setValidade] = useState("");
   const [supermercadoNome, setSupermercadoNome] = useState("");
-  const [imagemFile, setImagemFile] = useState(null);
   const [editingId, setEditingId] = useState(null);
-
-  const [uploadProgress, setUploadProgress] = useState(0);
 
   const load = async () => {
     const data = await getPromotions();
@@ -37,47 +27,14 @@ export default function Promotions() {
     load();
   }, []);
 
-  const uploadImage = async () => {
-    if (!imagemFile) return null;
-
-    const fileName = `${Date.now()}-${imagemFile.name}`;
-    const storageRef = ref(storage, `promotions/${fileName}`);
-
-    const uploadTask = uploadBytesResumable(storageRef, imagemFile);
-
-    return new Promise((resolve, reject) => {
-      uploadTask.on(
-        "state_changed",
-        (snapshot) => {
-          const progress = Math.round(
-            (snapshot.bytesTransferred / snapshot.totalBytes) * 100
-          );
-          setUploadProgress(progress);
-        },
-        (err) => reject(err),
-        async () => {
-          const url = await getDownloadURL(uploadTask.snapshot.ref);
-          resolve(url);
-        }
-      );
-    });
-  };
-
   const submitPromo = async (e) => {
     e.preventDefault();
-
-    let imageUrl = null;
-
-    if (imagemFile) {
-      imageUrl = await uploadImage();
-    }
 
     const newData = {
       produto,
       preco: Number(preco),
       validade,
       supermercado: supermercadoNome,
-      imagem: imageUrl,
     };
 
     if (editingId) {
@@ -98,8 +55,6 @@ export default function Promotions() {
     setPreco("");
     setValidade("");
     setSupermercadoNome("");
-    setImagemFile(null);
-    setUploadProgress(0);
     setShowForm(false);
   };
 
@@ -135,7 +90,7 @@ export default function Promotions() {
         <form
           onSubmit={submitPromo}
           style={{
-            maxWidth: "450px",
+            maxWidth: 450,
             margin: "0 auto 32px",
             padding: 20,
             background: "#ffffff",
@@ -178,21 +133,8 @@ export default function Promotions() {
             value={supermercadoNome}
             onChange={(e) => setSupermercadoNome(e.target.value)}
             required
-            style={{ width: "100%", padding: 10, marginBottom: 8 }}
+            style={{ width: "100%", padding: 10, marginBottom: 12 }}
           />
-
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setImagemFile(e.target.files[0])}
-            style={{ width: "100%", marginBottom: 12 }}
-          />
-
-          {uploadProgress > 0 && (
-            <p style={{ marginBottom: 12 }}>
-              Upload: {uploadProgress}% ⏳
-            </p>
-          )}
 
           <div style={{ display: "flex", gap: 10 }}>
             <button
@@ -242,40 +184,21 @@ export default function Promotions() {
               borderRadius: 12,
               boxShadow: "0 6px 20px rgba(0,0,0,.08)",
               overflow: "hidden",
+              paddingBottom: 16,
             }}
           >
-            {p.imagem ? (
-              <img
-                src={p.imagem}
-                alt={p.produto}
-                style={{ width: "100%", height: 180, objectFit: "cover" }}
-              />
-            ) : (
-              <div
-                style={{
-                  width: "100%",
-                  height: 180,
-                  background: "#f3f3f3",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  color: "#999",
-                }}
-              >
-                Sem imagem
-              </div>
-            )}
-
             <div style={{ padding: 16 }}>
               <h3>{p.produto}</h3>
 
-              <p style={{ fontWeight: 700, color: "#139c43" }}>
+              <p style={{ color: "#139c43", fontWeight: 700 }}>
                 R$ {Number(p.preco).toFixed(2)}
               </p>
 
-              <p>Supermercado: <strong>{p.supermercado}</strong></p>
+              <p>
+                Supermercado: <strong>{p.supermercado}</strong>
+              </p>
 
-              <p>Validade: {p.validade}</p>
+              <p style={{ color: "#555" }}>Validade: {p.validade}</p>
 
               {user && (
                 <>
@@ -286,17 +209,15 @@ export default function Promotions() {
                       setPreco(p.preco);
                       setValidade(p.validade);
                       setSupermercadoNome(p.supermercado);
-                      setImagemFile(null);
-                      setUploadProgress(0);
                       setShowForm(true);
                     }}
                     style={{
                       background: "#1e5eff",
                       color: "#fff",
-                      padding: "6px 12px",
+                      padding: "6px 10px",
                       borderRadius: 6,
                       marginTop: 10,
-                      marginRight: 8,
+                      marginRight: 10,
                       cursor: "pointer",
                     }}
                   >
@@ -306,9 +227,9 @@ export default function Promotions() {
                   <button
                     onClick={() => handleDelete(p.id)}
                     style={{
-                      background: "#d9534f",
+                      background: "#e63946",
                       color: "#fff",
-                      padding: "6px 12px",
+                      padding: "6px 10px",
                       borderRadius: 6,
                       marginTop: 10,
                       cursor: "pointer",
