@@ -7,12 +7,13 @@ import {
   signOut,
   updateProfile
 } from "firebase/auth";
+import { app } from "../firebaseConfig";
 
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-  const auth = getAuth();
+const auth = getAuth(app);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
