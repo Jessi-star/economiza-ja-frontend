@@ -78,7 +78,7 @@ export default function Promotions() {
               border: "none",
               padding: "10px 16px",
               borderRadius: 8,
-              cursor: "pointer",
+              cursor: "pointer"
             }}
           >
             Nova Promoção
@@ -95,7 +95,7 @@ export default function Promotions() {
             padding: 20,
             background: "#ffffff",
             borderRadius: 12,
-            boxShadow: "0 4px 12px rgba(0,0,0,.1)",
+            boxShadow: "0 4px 12px rgba(0,0,0,.1)"
           }}
         >
           <h3 style={{ marginBottom: 12 }}>
@@ -145,7 +145,7 @@ export default function Promotions() {
                 padding: "10px 16px",
                 borderRadius: 8,
                 border: "none",
-                cursor: "pointer",
+                cursor: "pointer"
               }}
             >
               Salvar
@@ -160,7 +160,7 @@ export default function Promotions() {
                 padding: "10px 16px",
                 borderRadius: 8,
                 border: "none",
-                cursor: "pointer",
+                cursor: "pointer"
               }}
             >
               Cancelar
@@ -169,80 +169,72 @@ export default function Promotions() {
         </form>
       )}
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-          gap: 20,
-        }}
-      >
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+        gap: 20
+      }}>
         {promos.map((p) => (
-          <div
-            key={p.id}
+          <div key={p.id}
             style={{
               background: "#fff",
               borderRadius: 12,
               boxShadow: "0 6px 20px rgba(0,0,0,.08)",
-              overflow: "hidden",
-              paddingBottom: 16,
-            }}
-          >
-            <div style={{ padding: 16 }}>
-              <h3>{p.produto}</h3>
+              padding: 16
+            }}>
 
-              <p style={{ color: "#139c43", fontWeight: 700 }}>
-                R$ {Number(p.preco).toFixed(2)}
-              </p>
+            <h3>{p.produto}</h3>
+            <p style={{ color: "#139c43", fontWeight: 700 }}>
+              R$ {Number(p.preco).toFixed(2)}
+            </p>
 
-              <p>
-                Supermercado: <strong>{p.supermercado}</strong>
-              </p>
+            <p>Supermercado: <strong>{p.supermercado}</strong></p>
 
-              <p style={{ color: "#555" }}>Validade: {p.validade}</p>
+            <p style={{ color: "#555" }}>Validade: {p.validade}</p>
 
-              {user && (
-                <>
-                  <button
-                    onClick={() => {
-                      setEditingId(p.id);
-                      setProduto(p.produto);
-                      setPreco(p.preco);
-                      setValidade(p.validade);
-                      setSupermercadoNome(p.supermercado);
-                      setShowForm(true);
-                    }}
-                    style={{
-                      background: "#1e5eff",
-                      color: "#fff",
-                      padding: "6px 10px",
-                      borderRadius: 6,
-                      marginTop: 10,
-                      marginRight: 10,
-                      cursor: "pointer",
-                    }}
-                  >
-                    Editar
-                  </button>
+            {user && (
+              <>
+                <button
+                  onClick={() => {
+                    setEditingId(p.id);
+                    setProduto(p.produto);
+                    setPreco(p.preco);
+                    setValidade(p.validade);
+                    setSupermercadoNome(p.supermercado);
+                    setShowForm(true);
+                  }}
+                  style={{
+                    background: "#1e5eff",
+                    color: "#fff",
+                    padding: "6px 10px",
+                    borderRadius: 6,
+                    marginTop: 10,
+                    marginRight: 10,
+                    cursor: "pointer"
+                  }}
+                >
+                  Editar
+                </button>
 
-                  <button
-                    onClick={() => handleDelete(p.id)}
-                    style={{
-                      background: "#e63946",
-                      color: "#fff",
-                      padding: "6px 10px",
-                      borderRadius: 6,
-                      marginTop: 10,
-                      cursor: "pointer",
-                    }}
-                  >
-                    Excluir
-                  </button>
-                </>
-              )}
-            </div>
+                <button
+                  onClick={() => handleDelete(p.id)}
+                  style={{
+                    background: "#e63946",
+                    color: "#fff",
+                    padding: "6px 10px",
+                    borderRadius: 6,
+                    marginTop: 10,
+                    cursor: "pointer"
+                  }}
+                >
+                  Excluir
+                </button>
+              </>
+            )}
           </div>
         ))}
       </div>
+
     </div>
   );
 }
