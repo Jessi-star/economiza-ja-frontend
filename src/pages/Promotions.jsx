@@ -5,8 +5,10 @@ import {
   createPromotion,
   updatePromotion,
   deletePromotion,
-  uploadImage
 } from "../services/promotionService";
+
+import { storage } from "../firebaseConfig";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export default function Promotions() {
   const { user } = useAuth();
@@ -17,7 +19,8 @@ export default function Promotions() {
   const [preco, setPreco] = useState("");
   const [validade, setValidade] = useState("");
   const [supermercadoNome, setSupermercadoNome] = useState("");
-  const [imagemArquivo, setImagemArquivo] = useState(null);
+  const [imagemFile, setImagemFile] = useState(null);
+  const [imagemUrl, setImagemUrl] = useState("");
   const [editingId, setEditingId] = useState(null);
 
   const load = async () => {
@@ -25,23 +28,29 @@ export default function Promotions() {
     setPromos(data);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
+
+  const uploadImage = async () => {
+    if (!imagemFile) return imagemUrl; // mantém imagem quando editar sem trocar
+    const filePath = `promocoes/${Date.now()}-${imagemFile.name}`;
+    const storageRef = ref(storage, filePath);
+    await uploadBytes(storageRef, imagemFile);
+    return await getDownloadURL(storageRef);
+  };
 
   const submitPromo = async (e) => {
     e.preventDefault();
 
-    let uploadedImageUrl = "";
-
-    if (imagemArquivo && imagemArquivo instanceof File) {
-      uploadedImageUrl = await uploadImage(imagemArquivo);
-    }
+    const uploadedUrl = await uploadImage();
 
     const newData = {
       produto,
       preco: Number(preco),
       validade,
       supermercado: supermercadoNome,
-      imagem: uploadedImageUrl
+      imagem: uploadedUrl,
     };
 
     if (editingId) {
@@ -52,24 +61,22 @@ export default function Promotions() {
       alert("Promoção cadastrada ✅");
     }
 
-    resetForm();
-    await load();
-  };
-
-  const resetForm = () => {
-    setEditingId(null);
     setProduto("");
     setPreco("");
     setValidade("");
     setSupermercadoNome("");
-    setImagemArquivo(null);
+    setImagemFile(null);
+    setImagemUrl("");
+    setEditingId(null);
     setShowForm(false);
+
+    load();
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm("Excluir promoção?")) return;
     await deletePromotion(id);
-    await load();
+    load();
   };
 
   return (
@@ -77,16 +84,19 @@ export default function Promotions() {
       <h1 style={{ textAlign: "center", marginBottom: 24 }}>Promoções</h1>
 
       {user && (
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
           <button
-            onClick={() => resetForm() || setShowForm(true)}
-            style={{
-              background: "#139c43",
-              color: "#fff",
-              border: "none",
-              padding: "10px 16px",
-              borderRadius: 8
+            onClick={() => {
+              setShowForm(true);
+              setEditingId(null);
+              setProduto("");
+              setPreco("");
+              setValidade("");
+              setSupermercadoNome("");
+              setImagemFile(null);
+              setImagemUrl("");
             }}
+            style={{ background: "#139c43", color: "#fff", padding: "10px 16px", borderRadius: 8 }}
           >
             Nova Promoção
           </button>
@@ -94,134 +104,51 @@ export default function Promotions() {
       )}
 
       {showForm && (
-        <form
-          onSubmit={submitPromo}
-          style={{
-            maxWidth: 540,
-            margin: "0 auto 24px",
-            padding: 16,
-            background: "#fff",
-            borderRadius: 12,
-            boxShadow: "0 6px 20px rgba(0,0,0,.08)"
-          }}
-        >
-          <h3 style={{ marginBottom: 12 }}>
-            {editingId ? "Editar Promoção" : "Cadastrar Promoção"}
-          </h3>
+        <form onSubmit={submitPromo} style={{ maxWidth: 500, margin: "0 auto" }}>
+          <h3>{editingId ? "Editar Promoção" : "Cadastrar Promoção"}</h3>
 
-          <input placeholder="Produto" value={produto}
-            onChange={(e) => setProduto(e.target.value)} required
-            style={{ width: "100%", padding: 10, marginBottom: 8 }} />
+          <input value={produto} onChange={(e) => setProduto(e.target.value)} placeholder="Produto" required />
+          <input value={preco} onChange={(e) => setPreco(e.target.value)} placeholder="Preço" required />
+          <input type="date" value={validade} onChange={(e) => setValidade(e.target.value)} required />
+          <input value={supermercadoNome} onChange={(e) => setSupermercadoNome(e.target.value)} placeholder="Supermercado" required />
 
-          <input placeholder="Preço ex: 18.99" value={preco}
-            onChange={(e) => setPreco(e.target.value)} required
-            style={{ width: "100%", padding: 10, marginBottom: 8 }} />
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setImagemFile(e.target.files[0])}
+            required={!editingId}
+          />
 
-          <input type="date" value={validade}
-            onChange={(e) => setValidade(e.target.value)} required
-            style={{ width: "100%", padding: 10, marginBottom: 8 }} />
-
-          <input placeholder="Supermercado" value={supermercadoNome}
-            onChange={(e) => setSupermercadoNome(e.target.value)} required
-            style={{ width: "100%", padding: 10, marginBottom: 8 }} />
-
-          <input type="file" accept="image/*"
-            onChange={(e) => setImagemArquivo(e.target.files[0])}
-            style={{ width: "100%", padding: 10, marginBottom: 12 }} />
-
-          <div style={{ display: "flex", gap: 8 }}>
-            <button type="submit"
-              style={{
-                background: "#1e5eff",
-                color: "#fff",
-                border: "none",
-                padding: "10px 16px",
-                borderRadius: 8
-              }}>
-              Salvar
-            </button>
-            <button type="button" onClick={resetForm}
-              style={{
-                background: "#777",
-                color: "#fff",
-                border: "none",
-                padding: "10px 16px",
-                borderRadius: 8
-              }}>
-              Cancelar
-            </button>
-          </div>
+          <br />
+          <button type="submit">Salvar</button>
+          <button type="button" onClick={() => setShowForm(false)}>Cancelar</button>
         </form>
       )}
 
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-        gap: 20
-      }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, 300px)", justifyContent: "center", gap: 20 }}>
         {promos.map((p) => (
-          <div key={p.id}
-            style={{
-              background: "#fff",
-              borderRadius: 12,
-              boxShadow: "0 6px 20px rgba(0,0,0,.08)",
-              overflow: "hidden"
-            }}>
+          <div key={p.id} style={{ border: "1px solid #ddd", padding: 12, borderRadius: 8 }}>
+            <img src={p.imagem} alt={p.produto} style={{ width: "100%", borderRadius: 8, objectFit: "cover", height: 180 }} />
+            <h3>{p.produto}</h3>
+            <strong>R$ {p.preco.toFixed(2)}</strong>
+            <p>Supermercado: {p.supermercado}</p>
+            <p>Validade: {p.validade}</p>
 
-            {p.imagem ? (
-              <img src={p.imagem}
-                alt={p.produto}
-                style={{ width: "100%", height: 180, objectFit: "cover" }} />
-            ) : (
-              <div style={{
-                width: "100%", height: 180, background: "#eee",
-                display: "flex", justifyContent: "center", alignItems: "center"
-              }}>Sem Imagem</div>
+            {user && (
+              <>
+                <button onClick={() => {
+                  setEditingId(p.id);
+                  setProduto(p.produto);
+                  setPreco(p.preco);
+                  setValidade(p.validade);
+                  setSupermercadoNome(p.supermercado);
+                  setImagemUrl(p.imagem);
+                  setShowForm(true);
+                }}>Editar</button>
+
+                <button onClick={() => handleDelete(p.id)} style={{ marginLeft: 8 }}>Excluir</button>
+              </>
             )}
-
-            <div style={{ padding: 16 }}>
-              <h3>{p.produto}</h3>
-              <strong style={{ color: "#139c43" }}>R$ {Number(p.preco).toFixed(2)}</strong>
-
-              <p>Supermercado: {p.supermercado}</p>
-              <p style={{ color: "#555" }}>Validade: {p.validade}</p>
-
-              {user && (
-                <>
-                  <button
-                    onClick={() => {
-                      setShowForm(true);
-                      setEditingId(p.id);
-                      setProduto(p.produto);
-                      setPreco(p.preco);
-                      setValidade(p.validade);
-                      setSupermercadoNome(p.supermercado);
-                    }}
-                    style={{
-                      background: "#1e5eff",
-                      color: "#fff",
-                      padding: "6px 10px",
-                      borderRadius: 6,
-                      marginTop: 10,
-                      marginRight: 10
-                    }}>
-                    Editar
-                  </button>
-
-                  <button
-                    onClick={() => handleDelete(p.id)}
-                    style={{
-                      background: "#d9534f",
-                      color: "#fff",
-                      padding: "6px 10px",
-                      borderRadius: 6,
-                      marginTop: 10
-                    }}>
-                    Excluir
-                  </button>
-                </>
-              )}
-            </div>
           </div>
         ))}
       </div>
