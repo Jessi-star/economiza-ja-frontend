@@ -8,7 +8,7 @@ import {
   doc
 } from "firebase/firestore";
 
-const COLLECTION = "supermarkets";
+const COLLECTION = "supermercados";
 
 // ✅ Buscar supermercados
 export async function getSupermarkets() {
