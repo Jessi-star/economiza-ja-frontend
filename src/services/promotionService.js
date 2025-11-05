@@ -23,4 +23,5 @@ export async function getPromotions() {
 
 // ✅ Criar promoção
 export async function createPromotion(promotion) {
-  await addDoc(collection(db, COLLECTION_NAME), promotion);_
+  await addDoc(collection(db, COLLECTION_NAME), promotion);
+ }
