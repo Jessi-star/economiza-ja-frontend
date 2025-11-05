@@ -8,7 +8,7 @@ import {
 } from "../services/promotionService";
 
 import { storage } from "../firebaseConfig";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
 export default function Promotions() {
   const { user } = useAuth();
@@ -22,6 +22,9 @@ export default function Promotions() {
   const [imagemFile, setImagemFile] = useState(null);
   const [editingId, setEditingId] = useState(null);
 
+  const [sending, setSending] = useState(false);
+  const [progress, setProgress] = useState(0);
+
   const load = async () => {
     const data = await getPromotions();
     setPromos(data);
@@ -33,37 +36,71 @@ export default function Promotions() {
 
   const uploadImage = async () => {
     if (!imagemFile) return null;
-    const imgRef = ref(storage, `promotions/${Date.now()}-${imagemFile.name}`);
-    const upload = await uploadBytes(imgRef, imagemFile);
-    return await getDownloadURL(upload.ref);
+
+    return new Promise((resolve, reject) => {
+      const imgRef = ref(storage, `promotions/${Date.now()}-${imagemFile.name}`);
+      const uploadTask = uploadBytesResumable(imgRef, imagemFile);
+
+      setSending(true);
+      setProgress(0);
+
+      uploadTask.on(
+        "state_changed",
+        (snap) => {
+          const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+          setProgress(pct);
+        },
+        (error) => {
+          console.error("Erro ao enviar imagem:", error);
+          alert("Erro ao enviar imagem: " + error.message);
+          setSending(false);
+          reject(error);
+        },
+        async () => {
+          const url = await getDownloadURL(uploadTask.snapshot.ref);
+          setSending(false);
+          resolve(url);
+        }
+      );
+    });
   };
 
   const submitPromo = async (e) => {
     e.preventDefault();
 
-    let imageUrl = null;
-    if (imagemFile) {
-      imageUrl = await uploadImage();
+    try {
+      setSending(true);
+
+      let imageUrl = null;
+      if (imagemFile) {
+        imageUrl = await uploadImage();
+      }
+
+      const newData = {
+        produto,
+        preco: Number(preco),
+        validade,
+        supermercado: supermercadoNome,
+        imagem: imageUrl,
+      };
+
+      if (editingId) {
+        await updatePromotion(editingId, newData);
+        alert("Promoção atualizada ✅");
+      } else {
+        await createPromotion(newData);
+        alert("Promoção cadastrada ✅");
+      }
+
+      resetForm();
+      await load();
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao salvar: " + err.message);
+    } finally {
+      setSending(false);
+      setProgress(0);
     }
-
-    const newData = {
-      produto,
-      preco: Number(preco),
-      validade,
-      supermercado: supermercadoNome,
-      imagem: imageUrl,
-    };
-
-    if (editingId) {
-      await updatePromotion(editingId, newData);
-      alert("Promoção atualizada ✅");
-    } else {
-      await createPromotion(newData);
-      alert("Promoção cadastrada ✅");
-    }
-
-    resetForm();
-    await load();
   };
 
   const resetForm = () => {
@@ -74,6 +111,7 @@ export default function Promotions() {
     setSupermercadoNome("");
     setImagemFile(null);
     setShowForm(false);
+    setProgress(0);
   };
 
   const handleDelete = async (id) => {
@@ -83,20 +121,20 @@ export default function Promotions() {
   };
 
   return (
-    <div>
+    <div style={{ paddingBottom: 48 }}>
       <h1 style={{ textAlign: "center", marginBottom: 24 }}>Promoções</h1>
 
       {user && (
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
           <button
-            onClick={() => resetForm() || setShowForm(true)}
+            onClick={() => setShowForm(true)}
             style={{
               background: "#139c43",
               color: "#fff",
               border: "none",
-              padding: "10px 16px",
+              padding: "10px 18px",
               borderRadius: 8,
-              cursor: "pointer"
+              cursor: "pointer",
             }}
           >
             Nova Promoção
@@ -113,80 +151,58 @@ export default function Promotions() {
             padding: 20,
             background: "#ffffff",
             borderRadius: 12,
-            boxShadow: "0 4px 12px rgba(0,0,0,.1)"
+            boxShadow: "0 4px 12px rgba(0,0,0,.1)",
           }}
         >
           <h3 style={{ marginBottom: 12 }}>
             {editingId ? "Editar Promoção" : "Cadastrar Promoção"}
           </h3>
 
-          <input
-            placeholder="Produto"
-            value={produto}
-            onChange={(e) => setProduto(e.target.value)}
-            required
-            style={{ width: "100%", padding: 10, marginBottom: 8 }}
-          />
+          <input placeholder="Produto" value={produto} onChange={(e) => setProduto(e.target.value)}
+            required style={{ width: "100%", padding: 10, marginBottom: 8 }} />
 
-          <input
-            placeholder="Preço (Ex: 9.99)"
-            type="number"
-            step="0.01"
-            value={preco}
-            onChange={(e) => setPreco(e.target.value)}
-            required
-            style={{ width: "100%", padding: 10, marginBottom: 8 }}
-          />
+          <input type="number" step="0.01" placeholder="Preço"
+            value={preco} onChange={(e) => setPreco(e.target.value)}
+            required style={{ width: "100%", padding: 10, marginBottom: 8 }} />
 
-          <input
-            type="date"
-            value={validade}
-            onChange={(e) => setValidade(e.target.value)}
-            required
-            style={{ width: "100%", padding: 10, marginBottom: 8 }}
-          />
+          <input type="date"
+            value={validade} onChange={(e) => setValidade(e.target.value)}
+            required style={{ width: "100%", padding: 10, marginBottom: 8 }} />
 
-          <input
-            placeholder="Supermercado"
-            value={supermercadoNome}
-            onChange={(e) => setSupermercadoNome(e.target.value)}
-            required
-            style={{ width: "100%", padding: 10, marginBottom: 8 }}
-          />
+          <input placeholder="Supermercado"
+            value={supermercadoNome} onChange={(e) => setSupermercadoNome(e.target.value)}
+            required style={{ width: "100%", padding: 10, marginBottom: 8 }} />
 
-          <input
-            type="file"
-            accept="image/*"
+          <input type="file" accept="image/*"
             onChange={(e) => setImagemFile(e.target.files[0])}
             style={{ width: "100%", marginBottom: 12 }}
-            required={!editingId}
-          />
+            required={!editingId} />
+
+          {sending && (
+            <p style={{ marginBottom: 10 }}>Enviando imagem... {progress}%</p>
+          )}
 
           <div style={{ display: "flex", gap: 10 }}>
-            <button
-              type="submit"
+            <button type="submit" disabled={sending}
               style={{
                 background: "#1e5eff",
                 color: "#fff",
                 padding: "10px 16px",
                 borderRadius: 8,
                 border: "none",
-                cursor: "pointer"
+                cursor: sending ? "not-allowed" : "pointer",
               }}
             >
-              Salvar
+              {sending ? "Salvando..." : "Salvar"}
             </button>
 
-            <button
-              type="button"
-              onClick={resetForm}
+            <button type="button" onClick={resetForm} disabled={sending}
               style={{
                 background: "#777",
                 color: "#fff",
                 padding: "10px 16px",
                 borderRadius: 8,
                 border: "none",
-                cursor: "pointer"
               }}
             >
               Cancelar
@@ -195,51 +211,30 @@ export default function Promotions() {
         </form>
       )}
 
+      {/* LISTAGEM */}
       <div style={{
         display: "grid",
         gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-        gap: 20
+        gap: 20,
       }}>
         {promos.map((p) => (
-          <div key={p.id}
-            style={{
-              background: "#fff",
-              borderRadius: 12,
-              boxShadow: "0 6px 20px rgba(0,0,0,.08)",
-              overflow: "hidden"
-            }}>
-
-            {p.imagem ? (
-              <img
-                src={p.imagem}
-                alt={p.produto}
-                style={{
-                  width: "100%",
-                  height: 180,
-                  objectFit: "cover"
-                }}
-              />
-            ) : (
-              <div style={{
-                width: "100%",
-                height: 180,
-                background: "#f3f3f3",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center"
-              }}>
-                sem imagem
-              </div>
-            )}
+          <div key={p.id} style={{
+            background: "#fff",
+            borderRadius: 12,
+            boxShadow: "0 6px 20px rgba(0,0,0,.08)",
+            overflow: "hidden",
+          }}>
+            <img
+              src={p.imagem || ""}
+              alt={p.produto}
+              style={{ width: "100%", height: 180, objectFit: "cover" }}
+            />
 
             <div style={{ padding: 16 }}>
-              <h3>{p.produto}</h3>
-              <p style={{ color: "#139c43", fontWeight: 700 }}>
-                R$ {Number(p.preco).toFixed(2)}
-              </p>
+              <h3 style={{ marginBottom: 4 }}>{p.produto}</h3>
 
+              <p style={{ color: "#139c43", fontWeight: 700 }}>R$ {Number(p.preco).toFixed(2)}</p>
               <p>Supermercado: <strong>{p.supermercado}</strong></p>
-
               <p style={{ color: "#555" }}>Validade: {p.validade}</p>
 
               {user && (
@@ -260,7 +255,7 @@ export default function Promotions() {
                       borderRadius: 6,
                       marginTop: 10,
                       marginRight: 10,
-                      cursor: "pointer"
+                      cursor: "pointer",
                     }}
                   >
                     Editar
@@ -274,7 +269,7 @@ export default function Promotions() {
                       padding: "6px 10px",
                       borderRadius: 6,
                       marginTop: 10,
-                      cursor: "pointer"
+                      cursor: "pointer",
                     }}
                   >
                     Excluir
@@ -285,7 +280,6 @@ export default function Promotions() {
           </div>
         ))}
       </div>
-
     </div>
   );
 }
