@@ -1,47 +1,40 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import api from "../api/axiosInstance";
+import { createContext, useContext, useEffect, useState } from "react";
+import {
+  getAuth,
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  updateProfile
+} from "firebase/auth";
 
-const AuthContext = createContext(null);
+const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
-export function AuthProvider({ children }) {
+export const AuthProvider = ({ children }) => {
+  const auth = getAuth();
   const [user, setUser] = useState(null);
 
-  const login = async (email, senha) => {
-    const { data } = await api.post("/api/auth/login", { email, senha });
-    localStorage.setItem("token", data.token);
-    setUser(data.user);
-  };
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+    });
+    return () => unsub();
+  }, [auth]);
 
   const register = async (nome, email, senha) => {
-    const { data } = await api.post("/api/auth/register", { nome, email, senha });
-    localStorage.setItem("token", data.token);
-    setUser(data.user);
+    const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+    await updateProfile(userCredential.user, { displayName: nome });
   };
 
-  const logout = async () => {
-    await api.post("/api/auth/logout");
-    localStorage.removeItem("token");
-    setUser(null);
-  };
+  const login = async (email, senha) =>
+    await signInWithEmailAndPassword(auth, email, senha);
 
-  const fetchProfile = async () => {
-    try {
-      const { data } = await api.get("/api/auth/profile");
-      if (data?._id) setUser({ id: data._id, nome: data.nome, email: data.email });
-    } catch {
-      // sem sessão
-    }
-  };
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) fetchProfile();
-  }, []);
+  const logout = async () => await signOut(auth);
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, register, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
-}
+};

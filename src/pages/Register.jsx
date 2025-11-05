@@ -9,17 +9,18 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
 
-  const submit = async (e) => {
-    e.preventDefault();
-    try {
-      await register(nome, email, senha);
-      alert("Cadastro realizado ✅");
-      navigate("/");
-    } catch (err) {
-      alert("Erro ao cadastrar ❌");
-      console.error(err);
-    }
-  };
+ const submit = async (e) => {
+  e.preventDefault();
+  try {
+    await register(nome, email, senha);
+    alert("Cadastro realizado ✅");
+    navigate("/");
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao cadastrar ❌ " + err.message);
+  }
+};
+
 
   return (
     <div className="flex items-center justify-center" style={{ minHeight: "70vh" }}>
