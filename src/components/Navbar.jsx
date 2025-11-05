@@ -22,6 +22,8 @@ export default function Navbar() {
 
       <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
         <Link to="/" style={{ color: "white", textDecoration: "none" }}>Promoções</Link>
+        {user && (
+        <Link to="/supermarkets"style={{ color: "white", textDecoration: "none" }}>Supermercados</Link>)}
 
         {!user && (
           <>

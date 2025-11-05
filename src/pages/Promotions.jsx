@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import {
   getPromotions,
   createPromotion,
+  updatePromotion,
   deletePromotion,
 } from "../services/promotionService";
 
@@ -16,6 +17,7 @@ export default function Promotions() {
   const [validade, setValidade] = useState("");
   const [supermercadoNome, setSupermercadoNome] = useState("");
   const [imagemUrl, setImagemUrl] = useState("");
+  const [editingId, setEditingId] = useState(null);
 
   const load = async () => {
     const data = await getPromotions();
@@ -29,14 +31,23 @@ export default function Promotions() {
   const submitPromo = async (e) => {
     e.preventDefault();
 
-    await createPromotion({
+    const newData = {
       produto,
       preco: Number(preco),
       validade,
       supermercado: supermercadoNome,
       imagem: imagemUrl,
-    });
+    };
 
+    if (editingId) {
+      await updatePromotion(editingId, newData);
+      alert("Promoção atualizada ✅");
+    } else {
+      await createPromotion(newData);
+      alert("Promoção cadastrada ✅");
+    }
+
+    setEditingId(null);
     setProduto("");
     setPreco("");
     setValidade("");
@@ -45,7 +56,6 @@ export default function Promotions() {
     setShowForm(false);
 
     await load();
-    alert("Promoção cadastrada ✅");
   };
 
   const handleDelete = async (id) => {
@@ -61,7 +71,10 @@ export default function Promotions() {
       {user && (
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
           <button
-            onClick={() => setShowForm(true)}
+            onClick={() => {
+              setShowForm(true);
+              setEditingId(null);
+            }}
             style={{
               background: "#139c43",
               color: "#fff",
@@ -87,83 +100,129 @@ export default function Promotions() {
             boxShadow: "0 6px 20px rgba(0,0,0,.08)",
           }}
         >
-          <h3 style={{ marginBottom: 12 }}>Cadastrar promoção</h3>
+          <h3 style={{ marginBottom: 12 }}>
+            {editingId ? "Editar Promoção" : "Cadastrar Promoção"}
+          </h3>
 
           <input placeholder="Produto"
-            value={produto} onChange={e => setProduto(e.target.value)}
+            value={produto} onChange={(e) => setProduto(e.target.value)}
             required style={{ width: "100%", padding: 10, marginBottom: 8 }} />
 
           <input placeholder="Preço (ex: 18.99)"
-            value={preco} onChange={e => setPreco(e.target.value)}
+            value={preco} onChange={(e) => setPreco(e.target.value)}
             required style={{ width: "100%", padding: 10, marginBottom: 8 }} />
 
-          <input placeholder="Validade"
-            value={validade} onChange={e => setValidade(e.target.value)}
-            style={{ width: "100%", padding: 10, marginBottom: 8 }} />
+          <input type="date"
+            value={validade} onChange={(e) => setValidade(e.target.value)}
+            required style={{ width: "100%", padding: 10, marginBottom: 8 }} />
 
           <input placeholder="Supermercado"
-            value={supermercadoNome} onChange={e => setSupermercadoNome(e.target.value)}
-            style={{ width: "100%", padding: 10, marginBottom: 8 }} />
+            value={supermercadoNome} onChange={(e) => setSupermercadoNome(e.target.value)}
+            required style={{ width: "100%", padding: 10, marginBottom: 8 }} />
 
           <input placeholder="Imagem (URL)"
-            value={imagemUrl} onChange={e => setImagemUrl(e.target.value)}
+            value={imagemUrl} onChange={(e) => setImagemUrl(e.target.value)}
             style={{ width: "100%", padding: 10, marginBottom: 12 }} />
 
           <div style={{ display: "flex", gap: 8 }}>
             <button type="submit"
-              style={{ background: "#1e5eff", color: "#fff", border: "none", padding: "10px 16px", borderRadius: 8 }}>
+              style={{
+                background: "#1e5eff",
+                color: "#fff",
+                border: "none",
+                padding: "10px 16px",
+                borderRadius: 8
+              }}>
               Salvar
             </button>
-            <button type="button" onClick={() => setShowForm(false)}
-              style={{ background: "#777", color: "#fff", border: "none", padding: "10px 16px", borderRadius: 8 }}>
+            <button type="button"
+              onClick={() => setShowForm(false)}
+              style={{
+                background: "#777",
+                color: "#fff",
+                border: "none",
+                padding: "10px 16px",
+                borderRadius: 8
+              }}>
               Cancelar
             </button>
           </div>
         </form>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 20 }}>
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+        gap: 20
+      }}>
         {promos.map((p) => (
           <div key={p.id}
-            style={{ background: "#fff", borderRadius: 12, boxShadow: "0 6px 20px rgba(0,0,0,.08)", overflow: "hidden" }}>
-            {p.imagem ? (
-              <img src={p.imagem} alt={p.produto}
-                style={{ width: "100%", height: 180, objectFit: "cover" }} />
-            ) : (
-              <div style={{
-                width: "100%", height: 180, background: "#f3f3f3",
-                display: "flex", alignItems: "center", justifyContent: "center", color: "#888"
-              }}>
-                sem imagem
-              </div>
-            )}
+            style={{
+              background: "#fff",
+              borderRadius: 12,
+              boxShadow: "0 6px 20px rgba(0,0,0,.08)",
+              overflow: "hidden"
+            }}>
+            
+            <img src={p.imagem}
+              alt={p.produto}
+              style={{
+                width: "100%",
+                height: 180,
+                objectFit: "cover"
+              }} />
 
             <div style={{ padding: 16 }}>
-              <h3 style={{ margin: "0 0 4px" }}>{p.produto}</h3>
-
-              <div style={{ color: "#139c43", fontWeight: 700, marginBottom: 6 }}>
+              <h3>{p.produto}</h3>
+              <div style={{ color: "#139c43", fontWeight: 700 }}>
                 R$ {Number(p.preco).toFixed(2)}
               </div>
 
-              <div style={{ color: "#333", marginBottom: 4 }}>
-                Supermercado: <strong>{p.supermercado || "Não informado"}</strong>
-              </div>
+              <p>
+                Supermercado: <strong>{p.supermercado}</strong>
+              </p>
 
-              {p.validade && <div style={{ color: "#555" }}>Validade: {p.validade}</div>}
+              {p.validade && (
+                <p style={{ color: "#555" }}>Validade: {p.validade}</p>
+              )}
 
               {user && (
-                <button
-                  onClick={() => handleDelete(p.id)}
-                  style={{
-                    background: "#d9534f",
-                    color: "#fff",
-                    padding: "6px 10px",
-                    borderRadius: 6,
-                    marginTop: 10,
-                  }}
-                >
-                  Excluir
-                </button>
+                <>
+                  <button
+                    onClick={() => {
+                      setShowForm(true);
+                      setEditingId(p.id);
+                      setProduto(p.produto);
+                      setPreco(p.preco);
+                      setValidade(p.validade || "");
+                      setSupermercadoNome(p.supermercado);
+                      setImagemUrl(p.imagem || "");
+                    }}
+                    style={{
+                      background: "#1e5eff",
+                      color: "#fff",
+                      padding: "6px 10px",
+                      borderRadius: 6,
+                      marginTop: 10,
+                      marginRight: 10
+                    }}
+                  >
+                    Editar
+                  </button>
+
+                  <button
+                    onClick={() => handleDelete(p.id)}
+                    style={{
+                      background: "#d9534f",
+                      color: "#fff",
+                      padding: "6px 10px",
+                      borderRadius: 6,
+                      marginTop: 10
+                    }}
+                  >
+                    Excluir
+                  </button>
+                </>
               )}
             </div>
           </div>

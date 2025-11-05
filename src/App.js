@@ -4,6 +4,8 @@ import Promotions from "./pages/Promotions";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import Supermarkets from "./pages/Supermarkets";
+
 
 function PrivateRoute({ children }) {
   const { user } = useAuth();
@@ -21,7 +23,8 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/promocoes" element={<PrivateRoute><Promotions /></PrivateRoute>} />
-          </Routes>
+            <Route path="/supermarkets" element={<PrivateRoute><Supermarkets /></PrivateRoute>}/>
+            </Routes>
         </div>
       </Router>
     </AuthProvider>
