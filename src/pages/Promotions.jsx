@@ -6,9 +6,11 @@ import {
   updatePromotion,
   deletePromotion,
 } from "../services/promotionService";
+import { getSupermarkets } from "../services/supermarketService";
 
 export default function Promotions() {
   const { user } = useAuth();
+
   const [promos, setPromos] = useState([]);
   const [showForm, setShowForm] = useState(false);
 
@@ -18,13 +20,23 @@ export default function Promotions() {
   const [supermercadoNome, setSupermercadoNome] = useState("");
   const [editingId, setEditingId] = useState(null);
 
+  const [supermarkets, setSupermarkets] = useState([]);
+
+  // ✅ Carregar lista de promoções
   const load = async () => {
     const data = await getPromotions();
     setPromos(data);
   };
 
+  // ✅ Carregar lista de supermercados
+  const loadSupermarkets = async () => {
+    const data = await getSupermarkets();
+    setSupermarkets(data);
+  };
+
   useEffect(() => {
     load();
+    loadSupermarkets(); // ✅ necessário para preencher o select
   }, []);
 
   const submitPromo = async (e) => {
@@ -68,6 +80,26 @@ export default function Promotions() {
     <div>
       <h1 style={{ textAlign: "center", marginBottom: 24 }}>Promoções</h1>
 
+      {/* ✅ Mensagem para usuários deslogados */}
+      {!user && (
+        <div
+          style={{
+            background: "#ffcc00",
+            padding: "20px",
+            borderRadius: "12px",
+            color: "#000",
+            fontWeight: "bold",
+            fontSize: "20px",
+            textAlign: "center",
+            marginBottom: "24px",
+            boxShadow: "0 4px 10px rgba(0,0,0,0.15)"
+          }}
+        >
+          Faça login para ver as promoções 🔐
+        </div>
+      )}
+
+      {/* ✅ Botão só aparece para logados */}
       {user && (
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
           <button
@@ -86,7 +118,8 @@ export default function Promotions() {
         </div>
       )}
 
-      {showForm && (
+      {/* ✅ Formulário */}
+      {showForm && user && (
         <form
           onSubmit={submitPromo}
           style={{
@@ -128,13 +161,20 @@ export default function Promotions() {
             style={{ width: "100%", padding: 10, marginBottom: 8 }}
           />
 
-          <input
-            placeholder="Supermercado"
+          {/* ✅ Select com supermercados cadastrados */}
+          <select
             value={supermercadoNome}
             onChange={(e) => setSupermercadoNome(e.target.value)}
             required
-            style={{ width: "100%", padding: 10, marginBottom: 12 }}
-          />
+            style={{ width: "100%", padding: 10, marginBottom: 8 }}
+          >
+            <option value="">Selecione um Supermercado</option>
+            {supermarkets.map((s) => (
+              <option key={s.id} value={s.nome}>
+                {s.nome} - {s.endereco}
+              </option>
+            ))}
+          </select>
 
           <div style={{ display: "flex", gap: 10 }}>
             <button
@@ -169,6 +209,7 @@ export default function Promotions() {
         </form>
       )}
 
+      {/* ✅ Lista de promoções */}
       <div style={{
         display: "grid",
         gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
